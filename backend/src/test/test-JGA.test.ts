@@ -246,3 +246,85 @@ describe('Funcionalidad: Añadir candidato', () => {
     });
   });
 });
+
+describe('Controlador: addCandidateController', () => {
+  let req: any;
+  let res: any;
+  let addCandidateMock: jest.SpyInstance;
+
+  beforeEach(() => {
+    req = { body: {} };
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+    // Mock del servicio
+    addCandidateMock = jest.spyOn(
+      require('../application/services/candidateService'),
+      'addCandidate',
+    );
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('Dado datos válidos, cuando se añade un candidato, entonces responde 201 y retorna el candidato', async () => {
+    // Given
+    req.body = { nombre: 'Juan', email: 'juan@email.com' };
+    const candidatoMock = { id: 1, ...req.body };
+    addCandidateMock.mockResolvedValue(candidatoMock);
+    const {
+      addCandidateController,
+    } = require('../presentation/controllers/candidateController');
+
+    // When
+    await addCandidateController(req, res);
+
+    // Then
+    expect(addCandidateMock).toHaveBeenCalledWith(req.body);
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Candidate added successfully',
+      data: candidatoMock,
+    });
+  });
+
+  it('Dado un error de validación, cuando se añade un candidato, entonces responde 400 y retorna el mensaje de error', async () => {
+    // Given
+    req.body = { nombre: '' };
+    addCandidateMock.mockRejectedValue(new Error('Datos inválidos'));
+    const {
+      addCandidateController,
+    } = require('../presentation/controllers/candidateController');
+
+    // When
+    await addCandidateController(req, res);
+
+    // Then
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Error adding candidate',
+      error: 'Datos inválidos',
+    });
+  });
+
+  it('Dado un error desconocido, cuando se añade un candidato, entonces responde 400 y retorna error desconocido', async () => {
+    // Given
+    req.body = { nombre: 'Test' };
+    addCandidateMock.mockRejectedValue('error desconocido');
+    const {
+      addCandidateController,
+    } = require('../presentation/controllers/candidateController');
+
+    // When
+    await addCandidateController(req, res);
+
+    // Then
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Error adding candidate',
+      error: 'Unknown error',
+    });
+  });
+});
